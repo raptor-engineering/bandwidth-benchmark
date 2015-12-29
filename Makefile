@@ -32,6 +32,7 @@ message:
 	@echo ""
 	@echo "To compile for x86 Linux:          make bandwidth32"
 	@echo "To compile for x86_64 Linux:       make bandwidth64"
+	@echo "To compile for ppc64el Linux:      make bandwidth-ppc64el"
 	@echo "To compile for x86 Mac OS/X:       make bandwidth-mac32"
 	@echo "To compile for x86_64 Mac OS/X:    make bandwidth-mac64"
 	@echo "To compile for x86 Win32/Cygwin:   make bandwidth-win32"
@@ -42,6 +43,11 @@ bandwidth64:	main.c routines64.asm BMP64.a BMPGraphing64.a
 	${AS} -f elf64 routines64.asm -o routines64.o
 	${CC} ${CFLAGS} -m64 -c ${SRC}
 	${LD} -m64 routines64.o ${OBJ} BMP64.a -lm BMPGraphing64.a -o bandwidth64 
+
+bandwidth-ppc64el:	main.c routines-ppc64el.asm BMP64.a BMPGraphing64.a
+	as -mregnames -mpower8 -o routines-ppc64el.o routines-ppc64el.asm
+	${CC} ${CFLAGS} -m64 -c ${SRC}
+	${LD} -m64 routines-ppc64el.o ${OBJ} BMP64.a -lm BMPGraphing64.a -o bandwidth-ppc64el
 
 bandwidth32:	main.c routines32.asm BMP32.a BMPGraphing32.a
 	${AS} -f elf routines32.asm -o routines32.o
@@ -81,6 +87,7 @@ BMP32.a: BMP.c
 
 clean:
 	rm -f main.o bandwidth bandwidth32 bandwidth64 routines32.o routines64.o 
+	rm -f bandwidth-ppc64el routines-ppc64el.o
 	rm -f bandwidth-win32.exe bandwidth.bmp bandwidth-mac32 bandwidth-mac64
 	rm -f BMP.o BMP32.a BMP64.a BMPGraphing.o BMPGraphing32.a BMPGraphing64.a
 	rm -f font.o minifont.o network_bandwidth.bmp

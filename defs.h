@@ -98,13 +98,17 @@ extern int CopyAVX (void*, void*, unsigned long, unsigned long);
 extern int CopySSE_128bytes (void*, void*, unsigned long, unsigned long);
 
 extern int ReaderAVX (void *ptr, unsigned long, unsigned long);
+extern int ReaderVSX (void *ptr, unsigned long, unsigned long);
 extern int ReaderSSE2 (void *ptr, unsigned long, unsigned long);
 extern int ReaderSSE2_bypass (void *ptr, unsigned long, unsigned long);
+extern int RandomReaderVSX (unsigned long **ptr, unsigned long, unsigned long);
 extern int RandomReaderSSE2 (unsigned long **ptr, unsigned long, unsigned long);
 extern int RandomReaderSSE2_bypass (unsigned long **ptr, unsigned long, unsigned long);
 
 extern int WriterAVX (void *ptr, unsigned long, unsigned long, unsigned long);
+extern int WriterVSX (void *ptr, unsigned long, unsigned long, unsigned long);
 extern int WriterSSE2 (void *ptr, unsigned long, unsigned long, unsigned long);
+extern int RandomWriterVSX(unsigned long **ptr, unsigned long, unsigned long, unsigned long);
 extern int RandomWriterSSE2(unsigned long **ptr, unsigned long, unsigned long, unsigned long);
 
 extern int ReaderSSE2_128bytes(void *ptr, unsigned long, unsigned long);

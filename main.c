@@ -1,6 +1,7 @@
 /*============================================================================
   bandwidth 1.1, a benchmark to estimate memory transfer bandwidth.
   Copyright (C) 2005-2014 by Zack T Smith.
+  Copyright (c) 2015 Raptor Engineering
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,7 +17,7 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-  The author may be reached at veritas@comcast.net.
+  Zack Smith may be reached at veritas@comcast.net.
  *===========================================================================*/
 
 #include <stdio.h>
@@ -44,8 +45,13 @@
 #include "BMP.h"
 #include "BMPGraphing.h"
 
+#if defined(__x86_64__) || defined(__i386__)
 #define TITLE_MEMORY_NET "Network benchmark results from bandwidth " RELEASE " by Zack Smith, http://zsmith.co"
 #define TITLE_MEMORY_GRAPH "Memory benchmark results from bandwidth " RELEASE " by Zack Smith, http://zsmith.co"
+#else
+#define TITLE_MEMORY_NET "Network benchmark results from bandwidth " RELEASE " by Zack Smith and Raptor Engineering"
+#define TITLE_MEMORY_GRAPH "Memory benchmark results from bandwidth " RELEASE " by Zack Smith and Raptor Engineering"
+#endif
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -64,6 +70,7 @@ enum {
 	SSE2_BYPASS,
 	AVX,
 	AVX_BYPASS,
+	VSX,
 	LODSQ,
 	LODSD,
 	LODSW,
@@ -88,6 +95,7 @@ static uint32_t cpu_has_sse42 = 0;
 static uint32_t cpu_has_aes = 0;
 static uint32_t cpu_has_avx = 0;
 static uint32_t cpu_has_avx2 = 0;
+static uint32_t cpu_has_vsx = 0;
 static uint32_t cpu_has_64bit = 0;
 static uint32_t cpu_has_xd = 0;
 
@@ -160,6 +168,11 @@ static int chunk_sizes[] = {
 	72 * 1024 * 1024,
 	96 * 1024 * 1024,
 	128 * 1024 * 1024,
+#if defined(__PPC64__)
+	256 * 1024 * 1024,
+	512 * 1024 * 1024,
+	1024 * 1024 * 1024,
+#endif
 	0
 };
 
@@ -330,7 +343,7 @@ do_write (unsigned long size, int mode, bool random)
 	unsigned char *chunk0;
 	unsigned long loops;
 	unsigned long long total_count=0;
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	unsigned long value = 0x1234567689abcdef;
 #else
 	unsigned long value = 0x12345678;
@@ -343,17 +356,31 @@ do_write (unsigned long size, int mode, bool random)
 		error ("do_write(): chunk size is not multiple of 128.");
 
 	//-------------------------------------------------
+#if defined(__PPC64__)
+	// Align to 128-bit boundaries
+	chunk0 = malloc (size+256);
+	chunk = chunk0;
+	if (!chunk) 
+		error ("Out of memory");
+	tmp = (unsigned long) chunk;
+	if (tmp & 127) {
+		tmp -= (tmp & 127);
+		tmp += 128;
+		chunk = (unsigned char*) tmp;
+	}
+#else
+	// Align to 32-bit boundaries
 	chunk0 = malloc (size+64);
 	chunk = chunk0;
 	if (!chunk) 
 		error ("Out of memory");
-	
 	tmp = (unsigned long) chunk;
 	if (tmp & 31) {
 		tmp -= (tmp & 31);
 		tmp += 32;
 		chunk = (unsigned char*) tmp;
 	}
+#endif
 
 	//----------------------------------------
 	// Set up random pointers to chunks.
@@ -401,6 +428,9 @@ do_write (unsigned long size, int mode, bool random)
 	case AVX:
 		print (L"(256-bit), size = ");
 		break; 
+	case VSX:
+		print (L"(128-bit), size = ");
+		break; 
 	case AVX_BYPASS:
                 print (L"bypassing cache (256-bit), size = ");
 		break;
@@ -408,7 +438,7 @@ do_write (unsigned long size, int mode, bool random)
                 print (L"bypassing cache (128-bit), size = ");
 		break;
 	default:
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 		print (L"(64-bit), size = ");
 #else
 		print (L"(32-bit), size = ");
@@ -428,6 +458,7 @@ do_write (unsigned long size, int mode, bool random)
 		total_count += loops;
 
 		switch (mode) {
+#if defined(__x86_64__) || defined(__i386__)
 		case SSE2:
 			if (random)
 				RandomWriterSSE2 (chunk_ptrs, size/256, loops, value);
@@ -461,7 +492,17 @@ do_write (unsigned long size, int mode, bool random)
 				WriterAVX_bypass (chunk, size, loops, value);
 			}
 			break;
-		
+#endif
+
+#if defined(__PPC64__)
+		case VSX:
+			if (random)
+				RandomWriterVSX (chunk_ptrs, size/256, loops, value);
+			else
+				WriterVSX (chunk, size, loops, value);
+			break;
+#endif
+
 		default:
 			if (random)
 				RandomWriter (chunk_ptrs, size/256, loops, value);
@@ -515,6 +556,22 @@ do_read (unsigned long size, int mode, bool random)
 		error ("do_read(): chunk size is not multiple of 128.");
 
 	//-------------------------------------------------
+#if defined(__PPC64__)
+	// Align to 128-bit boundaries
+	chunk0 = chunk = malloc (size+256);
+	if (!chunk) 
+		error ("Out of memory");
+
+	memset (chunk, 0, size);
+
+	tmp = (unsigned long) chunk;
+	if (tmp & 127) {
+		tmp -= (tmp & 127);
+		tmp += 128;
+		chunk = (unsigned char*) tmp;
+	}
+#else
+	// Align to 32-bit boundaries
 	chunk0 = chunk = malloc (size+64);
 	if (!chunk) 
 		error ("Out of memory");
@@ -527,6 +584,7 @@ do_read (unsigned long size, int mode, bool random)
 		tmp += 32;
 		chunk = (unsigned char*) tmp;
 	}
+#endif
 
 	//----------------------------------------
 	// Set up random pointers to chunks.
@@ -586,6 +644,9 @@ do_read (unsigned long size, int mode, bool random)
 	case AVX:
 		print (L"(256-bit), size = ");
 		break; 
+	case VSX:
+		print (L"(128-bit), size = ");
+		break; 
 	case AVX_BYPASS:
                 print (L"bypassing cache (256-bit), size = ");
 		break;
@@ -593,7 +654,7 @@ do_read (unsigned long size, int mode, bool random)
                 print (L"bypassing cache (128-bit), size = ");
 		break;
 	default:
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 		print (L"(64-bit), size = ");
 #else
 		print (L"(32-bit), size = ");
@@ -615,6 +676,7 @@ do_read (unsigned long size, int mode, bool random)
 		total_count += loops;
 
 		switch (mode) {
+#if defined(__x86_64__) || defined(__i386__)
 		case SSE2:
 			if (random)
 				RandomReaderSSE2 (chunk_ptrs, size/256, loops);
@@ -644,7 +706,17 @@ do_read (unsigned long size, int mode, bool random)
 				ReaderAVX (chunk, size, loops);
 			}
 			break;
-		
+#endif
+
+#if defined(__PPC64__)
+		case VSX:
+			if (random)
+				RandomReaderVSX (chunk_ptrs, size/256, loops);
+			else
+				ReaderVSX (chunk, size, loops);
+			break;
+#endif
+
 		case LODSB:
 			if (!random) {
 				ReaderLODSB (chunk, size, loops);
@@ -701,7 +773,7 @@ do_read (unsigned long size, int mode, bool random)
 }
 
 
-
+#if defined(__x86_64__) || defined(__i386__)
 //----------------------------------------------------------------------------
 // Name:	do_copy
 // Purpose:	Performs sequential memory copy.
@@ -722,6 +794,33 @@ do_copy (unsigned long size, int mode)
 		error ("do_copy(): chunk size is not multiple of 128.");
 
 	//-------------------------------------------------
+
+#if defined(__PPC64__)
+	// Align to 128-bit boundaries
+	chunk_src0 = chunk_src = malloc (size+256);
+	if (!chunk_src) 
+		error ("Out of memory");
+	chunk_dest0 = chunk_dest = malloc (size+256);
+	if (!chunk_dest) 
+		error ("Out of memory");
+
+	memset (chunk_src, 100, size);
+	memset (chunk_dest, 200, size);
+
+	tmp = (unsigned long) chunk_src;
+	if (tmp & 127) {
+		tmp -= (tmp & 127);
+		tmp += 128;
+		chunk_src = (unsigned char*) tmp;
+	}
+	tmp = (unsigned long) chunk_dest;
+	if (tmp & 127) {
+		tmp -= (tmp & 127);
+		tmp += 128;
+		chunk_dest = (unsigned char*) tmp;
+	}
+#else
+	// Align to 32-bit boundaries
 	chunk_src0 = chunk_src = malloc (size+64);
 	if (!chunk_src) 
 		error ("Out of memory");
@@ -731,7 +830,7 @@ do_copy (unsigned long size, int mode)
 
 	memset (chunk_src, 100, size);
 	memset (chunk_dest, 200, size);
-	
+
 	tmp = (unsigned long) chunk_src;
 	if (tmp & 31) {
 		tmp -= (tmp & 31);
@@ -744,6 +843,7 @@ do_copy (unsigned long size, int mode)
 		tmp += 32;
 		chunk_dest = (unsigned char*) tmp;
 	}
+#endif
 
 	//-------------------------------------------------
 	print (L"Sequential copy ");
@@ -755,7 +855,7 @@ do_copy (unsigned long size, int mode)
 		print (L"(256-bit), size = ");
 	} 
 	else {
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 		print (L"(64-bit), size = ");
 #else
 		print (L"(32-bit), size = ");
@@ -770,14 +870,14 @@ do_copy (unsigned long size, int mode)
 	loops = (1 << 26) / size;	// XX need to adjust for CPU MHz
 	if (loops < 1)
 		loops = 1;
-	
+
 	t0 = mytime ();
 
 	while (diff < usec_per_test) {
 		total_count += loops;
 
 		if (mode == SSE2)  {
-#ifdef __x86_64__
+#if defined(__x86_64__)
 			if (size & 128)
 				CopySSE_128bytes (chunk_dest, chunk_src, size, loops);
 			else
@@ -808,6 +908,7 @@ do_copy (unsigned long size, int mode)
 
 	return result;
 }
+#endif
 
 
 //----------------------------------------------------------------------------
@@ -827,7 +928,7 @@ fb_readwrite (bool use_sse2)
 	unsigned long datum;
 	int fd;
 	register unsigned long foo;
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	unsigned long value = 0x1234567689abcdef;
 #else
 	unsigned long value = 0x12345678;
@@ -901,9 +1002,11 @@ fb_readwrite (bool use_sse2)
 
 	total_count = FBLOOPS_R;
 
+#if defined(__x86_64__) || defined(__i386__)
 	if (use_sse2)
 		ReaderSSE2 (fb, length, FBLOOPS_R);
 	else
+#endif
 		Reader (fb, length, FBLOOPS_R);
 
 	diff = mytime () - t0;
@@ -921,9 +1024,11 @@ fb_readwrite (bool use_sse2)
 
 	total_count = FBLOOPS_W;
 
+#if defined(__x86_64__) || defined(__i386__)
 	if (use_sse2) 
 		WriterSSE2_bypass (fb, length, FBLOOPS_W, value);
 	else
+#endif
 		Writer (fb, length, FBLOOPS_W, value);
 
 	diff = mytime () - t0;
@@ -937,6 +1042,8 @@ fb_readwrite (bool use_sse2)
 // Name:	register_test
 // Purpose:	Determines bandwidth of register-to-register transfers.
 //----------------------------------------------------------------------------
+#define REGISTER_COUNT 10000
+#define VREGISTER_COUNT 3333
 void
 register_test () 
 {
@@ -945,13 +1052,12 @@ register_test ()
 	unsigned long diff = 0;
 
 	//--------------------------------------
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	print (L"Main register to main register transfers (64-bit) ");
 #else
 	print (L"Main register to main register transfers (32-bit) ");
 #endif
 	flush ();
-#define REGISTER_COUNT 10000
 
 	t0 = mytime ();
 	while (diff < usec_per_test) 
@@ -967,13 +1073,12 @@ register_test ()
 	flush ();
 
 	//--------------------------------------
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	print (L"Main register to vector register transfers (64-bit) ");
 #else
 	print (L"Main register to vector register transfers (32-bit) ");
 #endif
 	flush ();
-#define VREGISTER_COUNT 3333
 
 	t0 = mytime ();
 	diff = 0;
@@ -991,7 +1096,7 @@ register_test ()
 	flush ();
 
 	//--------------------------------------
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	print (L"Vector register to main register transfers (64-bit) ");
 #else
 	print (L"Vector register to main register transfers (32-bit) ");
@@ -1031,6 +1136,8 @@ register_test ()
 	calculate_result (256, total_count, diff);
 	newline ();
 	flush ();
+
+#if defined(__x86_64__) || defined(__i386__)
 
 	//--------------------------------------
 	if (cpu_has_avx) {
@@ -1216,6 +1323,7 @@ register_test ()
 		newline ();
 		flush ();
 	}
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -1229,7 +1337,7 @@ stack_test ()
 	unsigned long t0;
 	unsigned long diff = 0;
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	print (L"Stack-to-register transfers (64-bit) ");
 #else
 	print (L"Stack-to-register transfers (32-bit) ");
@@ -1252,7 +1360,7 @@ stack_test ()
 	newline ();
 	flush ();
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	print (L"Register-to-stack transfers (64-bit) ");
 #else
 	print (L"Register-to-stack transfers (32-bit) ");
@@ -1873,7 +1981,8 @@ main (int argc, char **argv)
 	}
 
 	printf ("This is bandwidth version %s.\n", RELEASE);
-	printf ("Copyright (C) 2005-2014 by Zack T Smith.\n\n");
+	printf ("Copyright (C) 2005-2014 by Zack T Smith.\n");
+	printf ("Copyright (C) 2015 Raptor Engineering.\n\n");
 	printf ("This software is covered by the GNU Public License.\n");
 	printf ("It is provided AS-IS, use at your own risk.\n");
 	printf ("See the file COPYING for more information.\n\n");
@@ -1909,6 +2018,11 @@ main (int argc, char **argv)
 		return 0;
 	}
 
+#if defined(__PPC64__)
+	cpu_has_vsx = 1;
+#endif
+
+#if defined(__x86_64__) || defined(__i386__)
 	uint32_t ecx = get_cpuid1_ecx ();
 	uint32_t edx = get_cpuid1_edx ();
 	cpu_has_mmx = edx & CPUID_EDX_MMX;
@@ -2019,6 +2133,8 @@ main (int argc, char **argv)
 	if (!cpu_has_sse2)
 		use_sse2 = false;
 
+#endif
+
 	println (L"\nNotation: B = byte, kB = 1024 B, MB = 1048576 B.");
 
 	flush ();
@@ -2054,6 +2170,7 @@ main (int argc, char **argv)
 	strcpy (graph_title, TITLE_MEMORY_GRAPH);
 	BMPGraphing_set_title (graph, graph_title);
 
+#if defined(__x86_64__) || defined(__i386__)
 	//------------------------------------------------------------
 	// SSE2 sequential reads.
 	//
@@ -2239,11 +2356,85 @@ main (int argc, char **argv)
 		}
 	}
 
+#endif
+
+#if defined(__PPC64__)
+	//------------------------------------------------------------
+	// VSX sequential reads.
+	//
+	if (cpu_has_vsx) {
+		BMPGraphing_new_line (graph, "Sequential 128-bit reads", RGB_TURQUOISE);
+
+		newline ();
+
+		i = 0;
+		while ((chunk_size = chunk_sizes [i++])) {
+			if (!(chunk_size & 128)) {
+				int amount = do_read (chunk_size, VSX, false);
+				BMPGraphing_add_point (graph, chunk_size, amount);
+			}
+		}
+	}
+
+	//------------------------------------------------------------
+	// VSX random reads.
+	//
+	if (cpu_has_vsx) {
+		BMPGraphing_new_line (graph, "Random 128-bit reads", RGB_MAROON);
+
+		newline ();
+		srand (time (NULL));
+
+		i = 0;
+		while ((chunk_size = chunk_sizes [i++])) {
+			if (!(chunk_size & 128)) {
+				int amount = do_read (chunk_size, VSX, true);
+				BMPGraphing_add_point (graph, chunk_size, amount);
+			}
+		}
+	}
+
+	//------------------------------------------------------------
+	// VSX sequential writes that do not bypass the caches.
+	//
+	if (cpu_has_vsx) {
+		BMPGraphing_new_line (graph, "Sequential 128-bit cache writes", RGB_PINK);
+
+		newline ();
+
+		i = 0;
+		while ((chunk_size = chunk_sizes [i++])) {
+			if (!(chunk_size & 128)) {
+				int amount = do_write (chunk_size, VSX, false);
+				BMPGraphing_add_point (graph, chunk_size, amount);
+			}
+		}
+	}
+
+	//------------------------------------------------------------
+	// VSX random writes that do not bypass the caches.
+	//
+	if (cpu_has_vsx) {
+		BMPGraphing_new_line (graph, "Random 128-bit cache writes", RGB_NAVYBLUE);
+
+		newline ();
+		srand (time (NULL));
+
+		i = 0;
+		while ((chunk_size = chunk_sizes [i++])) {
+			if (!(chunk_size & 128)) {
+				int amount = do_write (chunk_size, VSX, true);
+				BMPGraphing_add_point (graph, chunk_size, amount);
+			}
+		}
+	}
+#endif
+
 	//------------------------------------------------------------
 	// Sequential non-SSE2 reads.
 	//
 	newline ();
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	BMPGraphing_new_line (graph, "Sequential 64-bit reads", RGB_BLUE);
 #else
 	BMPGraphing_new_line (graph, "Sequential 32-bit reads", RGB_BLUE);
@@ -2259,7 +2450,7 @@ main (int argc, char **argv)
 	// Random non-SSE2 reads.
 	//
 	newline ();
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	BMPGraphing_new_line (graph, "Random 64-bit reads", RGB_CYAN);
 #else
 	BMPGraphing_new_line (graph, "Random 32-bit reads", RGB_CYAN);
@@ -2277,7 +2468,7 @@ main (int argc, char **argv)
 	//------------------------------------------------------------
 	// Sequential non-SSE2 writes.
 	//
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	BMPGraphing_new_line (graph, "Sequential 64-bit writes", RGB_DARKGREEN);
 #else
 	BMPGraphing_new_line (graph, "Sequential 32-bit writes", RGB_DARKGREEN);
@@ -2294,7 +2485,7 @@ main (int argc, char **argv)
 	//------------------------------------------------------------
 	// Random non-SSE2 writes.
 	//
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	BMPGraphing_new_line (graph, "Random 64-bit writes", RGB_GREEN);
 #else
 	BMPGraphing_new_line (graph, "Random 32-bit writes", RGB_GREEN);
@@ -2310,6 +2501,8 @@ main (int argc, char **argv)
 			BMPGraphing_add_point (graph, chunk_size, amount);
 		}
 	}
+
+#if defined(__x86_64__) || defined(__i386__)
 
 	//------------------------------------------------------------
 	// SSE2 sequential copy.
@@ -2342,9 +2535,10 @@ main (int argc, char **argv)
 			}
 		}
 	}
+#endif
 
 #ifdef DOING_LODS
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__PPC64__)
 	//------------------------------------------------------------
 	// LODSQ 64-bit sequential reads.
 	//
