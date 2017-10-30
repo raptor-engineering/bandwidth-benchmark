@@ -1020,7 +1020,7 @@ _StackReader:
 	lis	r4, stack_test_7@highest	# load stack_test_7 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_7@higher	# load stack_test_7 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_7@h 		# load stack_test_7 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_7@high	# load stack_test_7 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_7@l		# load stack_test_7 bits  0-15 into r4 bits  0-15
 	std	r4, 48(r5)
 
@@ -1028,7 +1028,7 @@ _StackReader:
 	lis	r4, stack_test_6@highest	# load stack_test_6 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_6@higher	# load stack_test_6 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_6@h 		# load stack_test_6 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_6@high	# load stack_test_6 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_6@l		# load stack_test_6 bits  0-15 into r4 bits  0-15
 	std	r4, 40(r5)
 
@@ -1036,7 +1036,7 @@ _StackReader:
 	lis	r4, stack_test_5@highest	# load stack_test_5 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_5@higher	# load stack_test_5 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_5@h 		# load stack_test_5 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_5@high	# load stack_test_5 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_5@l		# load stack_test_5 bits  0-15 into r4 bits  0-15
 	std	r4, 32(r5)
 
@@ -1044,7 +1044,7 @@ _StackReader:
 	lis	r4, stack_test_4@highest	# load stack_test_4 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_4@higher	# load stack_test_4 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_4@h 		# load stack_test_4 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_4@high	# load stack_test_4 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_4@l		# load stack_test_4 bits  0-15 into r4 bits  0-15
 	std	r4, 24(r5)
 
@@ -1052,7 +1052,7 @@ _StackReader:
 	lis	r4, stack_test_3@highest	# load stack_test_3 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_3@higher	# load stack_test_3 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_3@h 		# load stack_test_3 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_3@high	# load stack_test_3 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_3@l		# load stack_test_3 bits  0-15 into r4 bits  0-15
 	std	r4, 16(r5)
 
@@ -1060,7 +1060,7 @@ _StackReader:
 	lis	r4, stack_test_2@highest	# load stack_test_2 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_2@higher	# load stack_test_2 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_2@h 		# load stack_test_2 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_2@high	# load stack_test_2 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_2@l		# load stack_test_2 bits  0-15 into r4 bits  0-15
 	std	r4, 8(r5)
 
@@ -1068,7 +1068,7 @@ _StackReader:
 	lis	r4, stack_test_1@highest	# load stack_test_1 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_1@higher	# load stack_test_1 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_1@h 		# load stack_test_1 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_1@high	# load stack_test_1 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_1@l		# load stack_test_1 bits  0-15 into r4 bits  0-15
 	std	r4, 0(r5)
 
@@ -1133,7 +1133,7 @@ _StackWriter:
 	lis	r4, stack_test_7@highest	# load stack_test_7 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_7@higher	# load stack_test_7 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_7@h 		# load stack_test_7 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_7@high	# load stack_test_7 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_7@l		# load stack_test_7 bits  0-15 into r4 bits  0-15
 	std	r4, 48(r5)
 
@@ -1141,7 +1141,7 @@ _StackWriter:
 	lis	r4, stack_test_6@highest	# load stack_test_6 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_6@higher	# load stack_test_6 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_6@h 		# load stack_test_6 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_6@high	# load stack_test_6 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_6@l		# load stack_test_6 bits  0-15 into r4 bits  0-15
 	std	r4, 40(r5)
 
@@ -1149,7 +1149,7 @@ _StackWriter:
 	lis	r4, stack_test_5@highest	# load stack_test_5 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_5@higher	# load stack_test_5 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_5@h 		# load stack_test_5 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_5@high	# load stack_test_5 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_5@l		# load stack_test_5 bits  0-15 into r4 bits  0-15
 	std	r4, 32(r5)
 
@@ -1157,7 +1157,7 @@ _StackWriter:
 	lis	r4, stack_test_4@highest	# load stack_test_4 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_4@higher	# load stack_test_4 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_4@h 		# load stack_test_4 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_4@high	# load stack_test_4 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_4@l		# load stack_test_4 bits  0-15 into r4 bits  0-15
 	std	r4, 24(r5)
 
@@ -1165,7 +1165,7 @@ _StackWriter:
 	lis	r4, stack_test_3@highest	# load stack_test_3 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_3@higher	# load stack_test_3 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_3@h 		# load stack_test_3 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_3@high	# load stack_test_3 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_3@l		# load stack_test_3 bits  0-15 into r4 bits  0-15
 	std	r4, 16(r5)
 
@@ -1173,7 +1173,7 @@ _StackWriter:
 	lis	r4, stack_test_2@highest	# load stack_test_2 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_2@higher	# load stack_test_2 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_2@h 		# load stack_test_2 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_2@high	# load stack_test_2 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_2@l		# load stack_test_2 bits  0-15 into r4 bits  0-15
 	std	r4, 8(r5)
 
@@ -1181,7 +1181,7 @@ _StackWriter:
 	lis	r4, stack_test_1@highest	# load stack_test_1 bits 48-63 into r4 bits 16-31
 	ori	r4, r4, stack_test_1@higher	# load stack_test_1 bits 32-47 into r4 bits  0-15
 	rldicr  r4, r4, 32, 31			# rotate r4's low word into r4's high word
-	oris    r4, r4, stack_test_1@h 		# load stack_test_1 bits 16-31 into r4 bits 16-31
+	oris    r4, r4, stack_test_1@high 	# load stack_test_1 bits 16-31 into r4 bits 16-31
 	ori     r4, r4, stack_test_1@l		# load stack_test_1 bits  0-15 into r4 bits  0-15
 	std	r4, 0(r5)
 
