@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <wchar.h>
 #include <math.h>
+#include <sys/ioctl.h>
 
 #include <netdb.h> // gethostbyname
 #include <sys/socket.h>
